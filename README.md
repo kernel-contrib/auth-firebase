@@ -45,17 +45,14 @@ func main() {
         panic(err)
     }
 
-    // Standalone usage (single provider):
-    // k.SetIdentityProvider(fb)
-
-    // Chain usage (multi-provider):
+    // Build the provider chain (for multi-provider setups).
     chain := sdk.NewIdentityProviderChain()
     chain.AddJWTIssuer("firebase",
         "https://securetoken.google.com/my-firebase-project", fb)
     chain.SetFallback("firebase", fb)
 
     k := kernel.New(kernel.LoadConfig())
-    k.SetIdentityProvider(chain)
+    k.SetIdentityProvider(chain) // or k.SetIdentityProvider(fb) for single-provider
     // ... register modules, k.Execute()
 }
 ```

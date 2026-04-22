@@ -44,11 +44,18 @@ type Config struct {
 	Redis *redis.Client
 }
 
+// authClient abstracts the Firebase Auth client for testing.
+// The concrete *auth.Client satisfies this interface implicitly.
+type authClient interface {
+	VerifyIDToken(ctx context.Context, idToken string) (*auth.Token, error)
+	RevokeRefreshTokens(ctx context.Context, uid string) error
+}
+
 // Provider implements sdk.IdentityProvider using Firebase Auth.
 // It validates Firebase ID tokens and supports per-token revocation
 // via Redis and full-session revocation via the Firebase Admin SDK.
 type Provider struct {
-	auth  *auth.Client
+	auth  authClient
 	redis *redis.Client
 }
 
@@ -106,6 +113,9 @@ func (p *Provider) Authenticate(ctx context.Context, headers http.Header) (*sdk.
 	}
 
 	token := strings.TrimPrefix(header, "Bearer ")
+	if token == "" {
+		return nil, sdk.ErrNoCredentials
+	}
 
 	if p.isRevoked(ctx, token) {
 		return nil, fmt.Errorf("authfirebase: token has been revoked")

@@ -1,12 +1,18 @@
 package authfirebase
 
 import (
+	"context"
+	"errors"
+	"net/http"
 	"testing"
 	"time"
 
 	"firebase.google.com/go/v4/auth"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.edgescale.dev/kernel/sdk"
 )
 
 func TestMapToken_Phone(t *testing.T) {
@@ -193,4 +199,118 @@ func TestNewConfig_MissingRedis(t *testing.T) {
 	_, err := New(t.Context(), Config{ProjectID: "test-project"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "redis client is required")
+}
+
+// ── Authenticate tests ───────────────────────────────────────────────────────
+
+// mockAuthClient implements authClient for unit testing.
+type mockAuthClient struct {
+	verifyFunc func(ctx context.Context, idToken string) (*auth.Token, error)
+}
+
+func (m *mockAuthClient) VerifyIDToken(ctx context.Context, idToken string) (*auth.Token, error) {
+	return m.verifyFunc(ctx, idToken)
+}
+
+func (m *mockAuthClient) RevokeRefreshTokens(_ context.Context, _ string) error {
+	return nil
+}
+
+// newTestProvider creates a Provider backed by miniredis and a mock auth client.
+func newTestProvider(t *testing.T, mock *mockAuthClient) (*Provider, *miniredis.Miniredis) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	rc := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	return &Provider{auth: mock, redis: rc}, mr
+}
+
+func TestAuthenticate_MissingHeader(t *testing.T) {
+	p, _ := newTestProvider(t, &mockAuthClient{})
+
+	_, err := p.Authenticate(t.Context(), http.Header{})
+	assert.ErrorIs(t, err, sdk.ErrNoCredentials)
+}
+
+func TestAuthenticate_WrongScheme(t *testing.T) {
+	p, _ := newTestProvider(t, &mockAuthClient{})
+
+	h := http.Header{}
+	h.Set("Authorization", "Basic dXNlcjpwYXNz")
+
+	_, err := p.Authenticate(t.Context(), h)
+	assert.ErrorIs(t, err, sdk.ErrNoCredentials)
+}
+
+func TestAuthenticate_EmptyBearerToken(t *testing.T) {
+	p, _ := newTestProvider(t, &mockAuthClient{})
+
+	h := http.Header{}
+	h.Set("Authorization", "Bearer ")
+
+	_, err := p.Authenticate(t.Context(), h)
+	assert.ErrorIs(t, err, sdk.ErrNoCredentials)
+}
+
+func TestAuthenticate_RevokedToken(t *testing.T) {
+	p, mr := newTestProvider(t, &mockAuthClient{})
+
+	revokedToken := "revoked-token-123"
+	mr.Set(revokePrefix+tokenHash(revokedToken), "1")
+
+	h := http.Header{}
+	h.Set("Authorization", "Bearer "+revokedToken)
+
+	_, err := p.Authenticate(t.Context(), h)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "revoked")
+}
+
+func TestAuthenticate_VerifyError(t *testing.T) {
+	mock := &mockAuthClient{
+		verifyFunc: func(_ context.Context, _ string) (*auth.Token, error) {
+			return nil, errors.New("token expired")
+		},
+	}
+	p, _ := newTestProvider(t, mock)
+
+	h := http.Header{}
+	h.Set("Authorization", "Bearer expired-token")
+
+	_, err := p.Authenticate(t.Context(), h)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "verify token")
+}
+
+func TestAuthenticate_Success(t *testing.T) {
+	rawToken := "valid-firebase-token"
+	mock := &mockAuthClient{
+		verifyFunc: func(_ context.Context, idToken string) (*auth.Token, error) {
+			assert.Equal(t, rawToken, idToken, "should pass the extracted token")
+			return &auth.Token{
+				UID:     "uid-abc",
+				Expires: time.Now().Add(time.Hour).Unix(),
+				Claims: map[string]any{
+					"email":          "user@example.com",
+					"email_verified": true,
+				},
+				Firebase: auth.FirebaseInfo{SignInProvider: "password"},
+			}, nil
+		},
+	}
+	p, _ := newTestProvider(t, mock)
+
+	h := http.Header{}
+	h.Set("Authorization", "Bearer "+rawToken)
+
+	identity, err := p.Authenticate(t.Context(), h)
+	require.NoError(t, err)
+
+	// Core identity fields (delegated to mapToken, already tested).
+	assert.Equal(t, "uid-abc", identity.Subject)
+	assert.Equal(t, "firebase", identity.Provider)
+	assert.Equal(t, "user@example.com", identity.Identifier)
+
+	// New fields set by Authenticate — the reason for this test.
+	assert.Equal(t, sdk.IdentityKindUser, identity.Kind)
+	assert.Equal(t, rawToken, identity.RawCredential)
 }

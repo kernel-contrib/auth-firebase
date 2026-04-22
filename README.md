@@ -25,6 +25,7 @@ import (
 
     "github.com/redis/go-redis/v9"
     "go.edgescale.dev/kernel"
+    "go.edgescale.dev/kernel/sdk"
     "go.edgescale.dev/kernel-contrib/auth-firebase"
 )
 
@@ -33,7 +34,7 @@ func main() {
 
     redisClient := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
 
-    provider, err := authfirebase.New(ctx, authfirebase.Config{
+    fb, err := authfirebase.New(ctx, authfirebase.Config{
         ProjectID: "my-firebase-project",
         Redis:     redisClient,
         // Optional: explicit credentials (defaults to ADC / GOOGLE_APPLICATION_CREDENTIALS)
@@ -44,8 +45,17 @@ func main() {
         panic(err)
     }
 
+    // Standalone usage (single provider):
+    // k.SetIdentityProvider(fb)
+
+    // Chain usage (multi-provider):
+    chain := sdk.NewIdentityProviderChain()
+    chain.AddJWTIssuer("firebase",
+        "https://securetoken.google.com/my-firebase-project", fb)
+    chain.SetFallback("firebase", fb)
+
     k := kernel.New(kernel.LoadConfig())
-    k.SetIdentityProvider(provider)
+    k.SetIdentityProvider(chain)
     // ... register modules, k.Execute()
 }
 ```
@@ -87,7 +97,7 @@ provider.RevokeAllSessions(ctx, firebaseUID)
 
 | Layer | What happens |
 | --- | --- |
-| **ValidateToken** | Checks Redis for revoked token hash → verifies with Firebase Admin SDK → maps claims to `sdk.Identity` |
+| **Authenticate** | Extracts Bearer token from headers → checks Redis for revoked token hash → verifies with Firebase Admin SDK → maps claims to `sdk.Identity` |
 | **RevokeToken / RevokeTokens** | Stores `SHA-256(token)` in Redis with 1h TTL (max Firebase token lifetime) |
 | **RevokeAllSessions** | Calls Firebase `RevokeRefreshTokens(uid)` to prevent new token issuance |
 
@@ -100,6 +110,8 @@ provider.RevokeAllSessions(ctx, firebaseUID)
 | `Identifier` | Phone number, email, or UID (depends on sign-in method) |
 | `Verified` | `true` for phone/OAuth; `email_verified` claim for password |
 | `SignInMethod` | `token.Firebase.SignInProvider` |
+| `Kind` | `IdentityKindUser` |
+| `RawCredential` | Raw Bearer token (never logged) |
 | `Claims` | Full decoded token claims |
 | `ExpiresAt` | `token.Expires` |
 

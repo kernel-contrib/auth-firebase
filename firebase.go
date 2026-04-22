@@ -14,6 +14,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	fb "firebase.google.com/go/v4"
@@ -50,8 +52,9 @@ type Provider struct {
 	redis *redis.Client
 }
 
-// Compile-time interface check.
+// Compile-time interface checks.
 var _ sdk.IdentityProvider = (*Provider)(nil)
+var _ sdk.TokenRevoker = (*Provider)(nil)
 
 // New creates a new Firebase identity provider.
 // It initialises the Firebase Admin SDK and returns a Provider ready for use
@@ -89,10 +92,21 @@ func New(ctx context.Context, cfg Config) (*Provider, error) {
 	}, nil
 }
 
-// ValidateToken verifies a Firebase ID token and returns the canonical identity.
-// It checks the local Redis revocation list first, then delegates to the
-// Firebase Admin SDK for cryptographic verification.
-func (p *Provider) ValidateToken(ctx context.Context, token string) (*sdk.Identity, error) {
+// Authenticate extracts a Bearer token from the Authorization header,
+// checks the local Redis revocation list, and verifies the token
+// via the Firebase Admin SDK.
+//
+// When used inside an IdentityProviderChain with issuer-based routing,
+// the chain only calls this provider when the JWT's iss claim matches.
+// ErrNoCredentials is mostly a safeguard for standalone usage.
+func (p *Provider) Authenticate(ctx context.Context, headers http.Header) (*sdk.Identity, error) {
+	header := headers.Get("Authorization")
+	if !strings.HasPrefix(header, "Bearer ") {
+		return nil, sdk.ErrNoCredentials
+	}
+
+	token := strings.TrimPrefix(header, "Bearer ")
+
 	if p.isRevoked(ctx, token) {
 		return nil, fmt.Errorf("authfirebase: token has been revoked")
 	}
@@ -102,7 +116,10 @@ func (p *Provider) ValidateToken(ctx context.Context, token string) (*sdk.Identi
 		return nil, fmt.Errorf("authfirebase: verify token: %w", err)
 	}
 
-	return mapToken(decoded), nil
+	identity := mapToken(decoded)
+	identity.Kind = sdk.IdentityKindUser
+	identity.RawCredential = token
+	return identity, nil
 }
 
 // mapToken converts a Firebase decoded token into the canonical sdk.Identity.

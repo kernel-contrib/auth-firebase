@@ -6,7 +6,7 @@ require (
 	firebase.google.com/go/v4 v4.19.0
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/stretchr/testify v1.11.1
-	go.edgescale.dev/kernel v0.1.2
+	go.edgescale.dev/kernel v0.2.0
 	google.golang.org/api v0.231.0
 )
 

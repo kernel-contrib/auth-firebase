@@ -17,7 +17,7 @@ const (
 )
 
 // RevokeToken revokes a single token by storing its hash in Redis.
-// This satisfies the sdk.IdentityProvider interface.
+// This satisfies the sdk.TokenRevoker interface.
 //
 // Only this specific token is revoked - other devices and sessions for
 // the same user are unaffected. For revoking all sessions, use

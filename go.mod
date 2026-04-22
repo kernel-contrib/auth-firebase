@@ -4,9 +4,10 @@ go 1.26.1
 
 require (
 	firebase.google.com/go/v4 v4.19.0
+	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/stretchr/testify v1.11.1
-	go.edgescale.dev/kernel v0.1.2
+	go.edgescale.dev/kernel v0.2.0
 	google.golang.org/api v0.231.0
 )
 
@@ -69,6 +70,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.1 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	github.com/zeebo/errs v1.4.0 // indirect
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect

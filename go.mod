@@ -1,13 +1,13 @@
-module go.edgescale.dev/kernel-contrib/auth-firebase
+module github.com/kernel-contrib/auth-firebase
 
 go 1.26.1
 
 require (
 	firebase.google.com/go/v4 v4.19.0
 	github.com/alicebob/miniredis/v2 v2.37.0
+	github.com/edgescaleDev/kernel v0.3.3
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/stretchr/testify v1.11.1
-	go.edgescale.dev/kernel v0.2.0
 	google.golang.org/api v0.231.0
 )
 

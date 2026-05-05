@@ -9,10 +9,10 @@ import (
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/alicebob/miniredis/v2"
+	"github.com/edgescaleDev/kernel/sdk"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.edgescale.dev/kernel/sdk"
 )
 
 func TestMapToken_Phone(t *testing.T) {

@@ -12,7 +12,7 @@ Implements `sdk.IdentityProvider` using the [Firebase Admin Go SDK](https://fire
 ## Installation
 
 ```bash
-go get go.edgescale.dev/kernel-contrib/auth-firebase@latest
+go get github.com/kernel-contrib/auth-firebase@latest
 ```
 
 ## Usage
@@ -24,9 +24,9 @@ import (
     "context"
 
     "github.com/redis/go-redis/v9"
-    "go.edgescale.dev/kernel"
-    "go.edgescale.dev/kernel/sdk"
-    "go.edgescale.dev/kernel-contrib/auth-firebase"
+    "github.com/edgescaleDev/kernel"
+    "github.com/edgescaleDev/kernel/sdk"
+    "github.com/kernel-contrib/auth-firebase"
 )
 
 func main() {

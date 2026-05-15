@@ -216,6 +216,10 @@ func (m *mockAuthClient) RevokeRefreshTokens(_ context.Context, _ string) error 
 	return nil
 }
 
+func (m *mockAuthClient) UpdateUser(_ context.Context, _ string, _ *auth.UserToUpdate) (*auth.UserRecord, error) {
+	return nil, nil
+}
+
 // newTestProvider creates a Provider backed by miniredis and a mock auth client.
 func newTestProvider(t *testing.T, mock *mockAuthClient) (*Provider, *miniredis.Miniredis) {
 	t.Helper()

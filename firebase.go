@@ -49,6 +49,7 @@ type Config struct {
 type authClient interface {
 	VerifyIDToken(ctx context.Context, idToken string) (*auth.Token, error)
 	RevokeRefreshTokens(ctx context.Context, uid string) error
+	UpdateUser(ctx context.Context, uid string, user *auth.UserToUpdate) (*auth.UserRecord, error)
 }
 
 // Provider implements sdk.IdentityProvider using Firebase Auth.

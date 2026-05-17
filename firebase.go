@@ -20,7 +20,7 @@ import (
 
 	fb "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
-	"github.com/edgescaleDev/kernel/sdk"
+	"github.com/kernel-contrib/sdk"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/api/option"
 )

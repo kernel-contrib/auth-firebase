@@ -5,8 +5,8 @@ go 1.26.1
 require (
 	firebase.google.com/go/v4 v4.19.0
 	github.com/alicebob/miniredis/v2 v2.37.0
-	github.com/edgescaleDev/kernel v0.3.3
-	github.com/redis/go-redis/v9 v9.18.0
+	github.com/kernel-contrib/sdk v0.0.0-20260517023559-29dcbf6d1127
+	github.com/redis/go-redis/v9 v9.19.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/api v0.231.0
 )
@@ -33,7 +33,6 @@ require (
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect

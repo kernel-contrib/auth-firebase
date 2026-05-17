@@ -7,7 +7,7 @@ import (
 	"io/fs"
 
 	"firebase.google.com/go/v4/auth"
-	"github.com/edgescaleDev/kernel/sdk"
+	"github.com/kernel-contrib/sdk"
 )
 
 // SyncModule is a headless kernel module that subscribes to IAM profile
